@@ -17,8 +17,12 @@ def main() -> int:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
-    app = MioApplication(sys.argv)
-    return app.run()
+    try:
+        app = MioApplication(sys.argv)
+        return app.run()
+    except Exception as e:
+        logging.getLogger(__name__).critical("Fatal application error: %s", e, exc_info=True)
+        return 1
 
 
 if __name__ == "__main__":

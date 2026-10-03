@@ -138,8 +138,8 @@ All file operations must remain subject to appropriate permissions and confirmat
 
 # Current Phase
 
-The project begins in:
+The project is currently in:
 
-**V1 — Desktop Companion**
+**V2 — Personal Utilities**
 
-The immediate objective is to establish the project foundation and then implement the smallest useful V1 incrementally.
+V1 (Desktop Companion) is complete. The immediate objective is to implement the foundational utilities defined for V2, following the existing architecture.

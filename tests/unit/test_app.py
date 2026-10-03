@@ -1,5 +1,6 @@
 """Tests for the Mio application lifecycle."""
 
+import pytest
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
@@ -29,6 +30,18 @@ class TestMioApplicationInit:
         mio_app = MioApplication(args=[])
         assert mio_app.qt_app is qapp
 
+    def test_fails_gracefully_if_pet_window_fails(self, qapp, monkeypatch):
+        """MioApplication should raise RuntimeError if PetWindow fails to initialize."""
+        import mio.app
+
+        def mock_pet_window_init(*args, **kwargs):
+            raise ValueError("Simulated window failure")
+
+        monkeypatch.setattr(mio.app, "PetWindow", mock_pet_window_init)
+
+        with pytest.raises(RuntimeError, match="Application initialization failed"):
+            MioApplication(args=[])
+
 
 class TestMioApplicationLifecycle:
     """Tests for MioApplication start/stop lifecycle."""
@@ -51,3 +64,36 @@ class TestMioApplicationLifecycle:
 
         exit_code = mio_app.run()
         assert isinstance(exit_code, int)
+
+    def test_run_returns_1_if_already_running(self, qapp):
+        """run() should return 1 if called while already running."""
+        mio_app = MioApplication(args=[])
+        mio_app._running = True
+
+        exit_code = mio_app.run()
+        assert exit_code == 1
+
+    def test_run_catches_exceptions_and_cleans_up(self, qapp, monkeypatch):
+        """run() should catch exceptions, return 1, and ensure cleanup is called."""
+        mio_app = MioApplication(args=[])
+
+        def mock_exec():
+            raise RuntimeError("Simulated event loop crash")
+
+        monkeypatch.setattr(mio_app.qt_app, "exec", mock_exec)
+
+        exit_code = mio_app.run()
+        assert exit_code == 1
+        assert not mio_app._running
+        assert mio_app._shutting_down
+
+    def test_cleanup_is_idempotent(self, qapp):
+        """cleanup() should safely execute multiple times without error."""
+        mio_app = MioApplication(args=[])
+
+        mio_app.cleanup()
+        assert mio_app._shutting_down
+
+        # Second call should return early, not crashing
+        mio_app.cleanup()
+        assert mio_app._shutting_down
